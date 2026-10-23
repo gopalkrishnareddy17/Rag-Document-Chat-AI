@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from rag import ingest_pdf, collection
+from rag import ingest_pdf, collection, answer_question
 import shutil
 import ollama
 import os
@@ -19,6 +19,20 @@ class AskRequest(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     model: str
+
+class ChatRequest(BaseModel):
+    question : str
+    top_k: int =1
+
+class Source(BaseModel):
+    file:str
+    page:int
+    distance:float
+
+class ChatResponse(BaseModel):
+    answer:str
+    sources:list[Source]
+
 
 @app.get("/model")
 def get_model():
@@ -53,3 +67,13 @@ def ingest(file: UploadFile = File(...)):
 @app.get("/status")
 def stats():
     return {"chunks_stored":collection.count()}
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(req: ChatRequest):
+    if not req.question.strip():
+        raise HTTPException(status_code=400, detail="Question not be empty")
+    if not 1 <= req.top_k <= 10:
+        raise HTTPException(status_code=400, detail="top_k must be between 1 and 10")
+    result = answer_question(req.question, model=MODEL, top_k=req.top_k)
+    return ChatResponse(**result)
