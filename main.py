@@ -7,7 +7,6 @@ import ollama
 load_dotenv()
 MODEL = os.getenv("CHAT_MODEL")
 
-
 app = FastAPI(title="RAG Document Chat AI")
 
 class AskRequest(BaseModel):
@@ -32,6 +31,7 @@ def ask(req: AskRequest):
         model= MODEL,
         messages=[
             {"role": "system", "content" :f"You are Pirate. Answer like a pirate. Answer in {req.language}"},
+            # {"role": "system", "content" :"You are Pirate. Answer likea a pirate"},
             {"role":"user","conten":req.question},
         ],
     )
